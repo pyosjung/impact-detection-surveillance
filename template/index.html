@@ -1,0 +1,107 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor System</title>
+    <!-- Socket.IO 클라이언트 라이브러리를 불러옵니다. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+
+
+<!-- 본문 -->
+<body>
+    <h1>Embedded System</h1>
+
+    
+    <!-- 서버와 클라이언트 간 연결 관리 -->
+    <h3 style="display:inline">Status: </h3>
+    <div id="connection_status" style="display:inline"></div>
+    <script>
+        // Socket.IO를 사용하여 서버와 클라이언트 간의 연결을 초기화
+        var socket = io(); 
+
+        // 서버로부터 'connect' 이벤트를 수신할 때마다 실행될 이벤트 리스너를 설정
+        socket.on('connect', function() {
+            document.getElementById('connection_status').innerText = "Connected to the server.";
+            requestVideoList();  // 연결 시 비디오 리스트 요청
+        });
+
+        // 서버로부터 'disconnect' 이벤트를 수신할 때마다 실행될 이벤트 리스너를 설정
+        socket.on('disconnect', function() {  
+            document.getElementById('connection_status').innerText = "Disconnected to the server.";
+        });
+
+        function requestVideoList() {
+            socket.emit('video_list_request');
+        }
+
+        socket.on('video_list_response', function(data) {
+            var videoList = document.getElementById('videoList');
+            videoList.innerHTML = '';
+            data.video_list.forEach(function(video) {
+                var li = document.createElement('li');
+                var a = document.createElement('a');
+                a.href = 'video/' + video.substr(16);
+                a.textContent = video.substr(16);
+                li.appendChild(a);
+                videoList.appendChild(li);
+            });
+        });
+    </script>
+
+
+    <!-- 시스템 컨트롤 하는 기능 -->
+    <h3>System Control:  
+    <button onclick="sendStart()">Start</button>     <!-- 버튼을 누르면 sendStart() 실행 -->
+    <button onclick="sendStop()">Stop</button>       <!-- 버튼을 누르면 sendStop()  실행 -->
+    </h3>
+    <script>
+         function sendStart() {
+            socket.emit('start', {'data': 'client requests to start the system.'});
+            
+        }
+        function sendStop() {
+            socket.emit('stop', {'data': 'client requests to stop the system.'});
+        }
+    </script>
+
+
+    <!-- 서버 메세지를 나타냄. -->
+    <h3 style="display:inline">Server: </h3>
+    <div id="server_message" style="display:inline"></div>
+    <script>
+        // 서버로부터 'server_message' 이벤트를 수신할 때마다 실행될 이벤트 리스너를 설정
+        socket.on('server_message', function(json) {
+            document.getElementById('server_message').innerText = json['data'];
+        });
+    </script>    
+
+    
+    <!-- 시스템에서 충격감지시 알림 기능 -->
+    <script>
+        // Notification API 권한 요청
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+
+        // Socket.IO를 사용하여 'shock_alert' 이벤트를 수신할 때마다 실행될 이벤트 리스너를 설정
+        socket.on('shock_alert', function(data) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Shock Alert', {
+                    body: data.msg,
+                });
+            } else {
+                alert(data.msg);
+            }
+        });
+    </script>
+
+
+    <!-- 비디오 리스트를 보여주는 기능 -->
+    <h3>Video List:</h3>
+    <ul id="videoList"></ul>
+    
+</body>
+</html>

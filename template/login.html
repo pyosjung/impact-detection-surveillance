@@ -1,0 +1,41 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- Socket.IO 클라이언트 라이브러리를 불러옵니다. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+
+
+<!-- 본문 -->
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <div><input type="text" id="username" name="username" placeholder="Username" required></div>
+        <div><input type="password" id="password" name="password" placeholder="Password" required></div>
+        <div><button type="submit">Login</button></div>
+    </form>
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        document.getElementById('loginForm').onsubmit = function(e) {
+            e.preventDefault();
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            // console.log(`Sending login request for ${username}`);  // 디버깅 로그 추가
+            socket.emit('login', {username: username, password: password});
+        };
+
+        socket.on('login_response', function(data) {
+            if (data.success) {
+                window.location.href = '/index';
+            } else {
+                alert('Login failed: ' + data.message);
+            }
+        });
+    </script>
+</body>
+</html>
